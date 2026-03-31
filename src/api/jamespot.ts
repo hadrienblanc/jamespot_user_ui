@@ -232,15 +232,20 @@ class JamespotApiClient {
     return response.error === 0 ? (response.result.list || []) : []
   }
 
-  async getArticles(limit = 20, page = 1): Promise<Article[]> {
+  async getArticles(limit = 20, page = 1, query?: string): Promise<Article[]> {
+    const body: Record<string, unknown> = {
+      limit,
+      page,
+      format: 'list',
+      orders: [{ name: 'dateCreation', sort: 'DESC' }],
+    }
+    if (query) {
+      body.query = query
+    }
+
     const response = await this.request<{ data?: Article[] }>('/api/objectlist/article', {
       method: 'POST',
-      body: JSON.stringify({
-        limit,
-        page,
-        format: 'list',
-        orders: [{ name: 'dateCreation', sort: 'DESC' }],
-      }),
+      body: JSON.stringify(body),
     })
 
     return response.error === 0 ? (response.result.data || []) : []

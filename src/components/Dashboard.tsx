@@ -24,6 +24,7 @@ export function Dashboard() {
   const [groupSearchQuery, setGroupSearchQuery] = useState('')
   const [userSearchQuery, setUserSearchQuery] = useState('')
   const [hasSearchedUsers, setHasSearchedUsers] = useState(false)
+  const [articleSearchQuery, setArticleSearchQuery] = useState('')
 
   useEffect(() => {
     loadGroups()
@@ -37,6 +38,22 @@ export function Dashboard() {
       setArticles(data)
     } catch (err) {
       console.error('Failed to load articles:', err)
+    } finally {
+      setLoadingArticles(false)
+    }
+  }
+
+  const handleArticleSearch = async () => {
+    if (!articleSearchQuery.trim()) {
+      loadArticles()
+      return
+    }
+    setLoadingArticles(true)
+    try {
+      const data = await jamespotApi.getArticles(10, 1, articleSearchQuery)
+      setArticles(data)
+    } catch (err) {
+      console.error('Article search failed:', err)
     } finally {
       setLoadingArticles(false)
     }
@@ -211,15 +228,29 @@ export function Dashboard() {
         <section className="section">
           <div className="section-header">
             <h2>Articles récents</h2>
-            <button onClick={loadArticles} className="btn-icon" disabled={loadingArticles} title="Rafraîchir" aria-label="Rafraîchir les articles">
-              ↻
-            </button>
+            <div className="section-actions">
+              <button onClick={loadArticles} className="btn-icon" disabled={loadingArticles} title="Rafraîchir" aria-label="Rafraîchir les articles">
+                ↻
+              </button>
+              <div className="search-bar">
+                <input
+                  type="text"
+                  placeholder="Rechercher un article..."
+                  value={articleSearchQuery}
+                  onChange={(e) => setArticleSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !loadingArticles && handleArticleSearch()}
+                />
+                <button onClick={handleArticleSearch} className="btn-small" disabled={loadingArticles}>
+                  Rechercher
+                </button>
+              </div>
+            </div>
           </div>
 
           {loadingArticles ? (
             <LoadingSpinner message="Chargement des articles..." />
           ) : articles.length === 0 ? (
-            <div className="empty">Aucun article</div>
+            <div className="empty">Aucun article trouvé</div>
           ) : (
             <div className="item-list">
               {articles.map((article) => (
