@@ -7,7 +7,6 @@ use tauri::Manager;
 
 fn main() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             let app_handle = app.handle();
             db::init(&app_handle)?;
