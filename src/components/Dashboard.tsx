@@ -1,42 +1,65 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { jamespotApi, type Group } from '../api/jamespot'
+import { jamespotApi, type Group, type UserInfo } from '../api/jamespot'
 
 export function Dashboard() {
   const { user, logout } = useAuth()
   const [groups, setGroups] = useState<Group[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [users, setUsers] = useState<UserInfo[]>([])
+  const [loadingGroups, setLoadingGroups] = useState(true)
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [groupSearchQuery, setGroupSearchQuery] = useState('')
+  const [userSearchQuery, setUserSearchQuery] = useState('')
+  const [hasSearchedUsers, setHasSearchedUsers] = useState(false)
 
   useEffect(() => {
     loadGroups()
   }, [])
 
   const loadGroups = async () => {
-    setLoading(true)
+    setLoadingGroups(true)
     try {
       const data = await jamespotApi.getGroups(50)
       setGroups(data)
     } catch (err) {
       console.error('Failed to load groups:', err)
     } finally {
-      setLoading(false)
+      setLoadingGroups(false)
     }
   }
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
+  const handleGroupSearch = async () => {
+    if (!groupSearchQuery.trim()) {
       loadGroups()
       return
     }
-    setLoading(true)
+    setLoadingGroups(true)
     try {
-      const data = await jamespotApi.getGroups(50, searchQuery)
+      const data = await jamespotApi.getGroups(50, groupSearchQuery)
       setGroups(data)
     } catch (err) {
-      console.error('Search failed:', err)
+      console.error('Group search failed:', err)
     } finally {
-      setLoading(false)
+      setLoadingGroups(false)
+    }
+  }
+
+  const handleUserSearch = async () => {
+    const query = userSearchQuery.trim()
+    if (!query) {
+      setUsers([])
+      setHasSearchedUsers(false)
+      return
+    }
+    setLoadingUsers(true)
+    try {
+      const data = await jamespotApi.searchUsers(query, 20)
+      setUsers(data)
+      setHasSearchedUsers(true)
+    } catch (err) {
+      console.error('User search failed:', err)
+    } finally {
+      setLoadingUsers(false)
     }
   }
 
@@ -62,33 +85,73 @@ export function Dashboard() {
               <input
                 type="text"
                 placeholder="Rechercher un groupe..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                value={groupSearchQuery}
+                onChange={(e) => setGroupSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleGroupSearch()}
               />
-              <button onClick={handleSearch} className="btn-small">
+              <button onClick={handleGroupSearch} className="btn-small">
                 Rechercher
               </button>
             </div>
           </div>
 
-          {loading ? (
+          {loadingGroups ? (
             <div className="loading">Chargement...</div>
           ) : groups.length === 0 ? (
             <div className="empty">Aucun groupe trouvé</div>
           ) : (
-            <div className="group-list">
+            <div className="item-list">
               {groups.map((group) => (
-                <div key={group.uri} className="group-card">
-                  <div className="group-icon">
+                <div key={group.uri} className="item-card">
+                  <div className="item-icon">
                     {group.title?.charAt(0).toUpperCase() || 'G'}
                   </div>
-                  <div className="group-info">
+                  <div className="item-info">
                     <h3>{group.title}</h3>
                     {group.description && <p>{group.description}</p>}
                     {group.memberCount !== undefined && (
-                      <span className="member-count">{group.memberCount} membres</span>
+                      <span className="meta">{group.memberCount} membres</span>
                     )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="section">
+          <div className="section-header">
+            <h2>Utilisateurs</h2>
+            <div className="search-bar">
+              <input
+                type="text"
+                placeholder="Rechercher un utilisateur..."
+                value={userSearchQuery}
+                onChange={(e) => setUserSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleUserSearch()}
+              />
+              <button onClick={handleUserSearch} className="btn-small" disabled={loadingUsers}>
+                {loadingUsers ? '...' : 'Rechercher'}
+              </button>
+            </div>
+          </div>
+
+          {users.length === 0 && !loadingUsers ? (
+            <div className="empty">
+              {hasSearchedUsers
+                ? 'Aucun utilisateur trouvé'
+                : 'Entrez un terme de recherche pour trouver des utilisateurs'}
+            </div>
+          ) : (
+            <div className="item-list">
+              {users.map((u) => (
+                <div key={u.uri} className="item-card">
+                  <div className="item-icon">
+                    {(u.displayName || u.email)?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div className="item-info">
+                    <h3>{u.displayName || u.email}</h3>
+                    {u.email && <p>{u.email}</p>}
                   </div>
                 </div>
               ))}
@@ -147,18 +210,22 @@ export function Dashboard() {
           flex: 1;
           padding: 24px;
           overflow: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 32px;
         }
 
         .section {
           max-width: 1200px;
           margin: 0 auto;
+          width: 100%;
         }
 
         .section-header {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 24px;
+          margin-bottom: 16px;
           gap: 16px;
           flex-wrap: wrap;
         }
@@ -199,22 +266,26 @@ export function Dashboard() {
           font-weight: 500;
         }
 
-        .btn-small:hover {
+        .btn-small:hover:not(:disabled) {
           background: var(--color-accent-hover);
         }
 
+        .btn-small:disabled {
+          opacity: 0.6;
+        }
+
         .loading, .empty {
-          padding: 48px;
+          padding: 32px;
           text-align: center;
           color: var(--color-text-muted);
         }
 
-        .group-list {
+        .item-list {
           display: grid;
           gap: 12px;
         }
 
-        .group-card {
+        .item-card {
           display: flex;
           gap: 16px;
           padding: 16px;
@@ -224,11 +295,11 @@ export function Dashboard() {
           transition: border-color 0.15s;
         }
 
-        .group-card:hover {
+        .item-card:hover {
           border-color: var(--color-text-muted);
         }
 
-        .group-icon {
+        .item-icon {
           width: 48px;
           height: 48px;
           display: flex;
@@ -242,27 +313,27 @@ export function Dashboard() {
           flex-shrink: 0;
         }
 
-        .group-info {
+        .item-info {
           flex: 1;
           min-width: 0;
         }
 
-        .group-info h3 {
+        .item-info h3 {
           font-size: 15px;
           font-weight: 500;
           margin-bottom: 4px;
         }
 
-        .group-info p {
+        .item-info p {
           font-size: 13px;
           color: var(--color-text-muted);
-          margin-bottom: 8px;
+          margin-bottom: 4px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
 
-        .member-count {
+        .meta {
           font-size: 12px;
           color: var(--color-text-muted);
         }
