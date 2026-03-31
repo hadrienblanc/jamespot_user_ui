@@ -47,11 +47,23 @@ function sanitizeError(err: unknown): string {
 function validateUrl(url: string): { valid: boolean; error?: string } {
   try {
     const parsed = new URL(url)
-    // Allow https and localhost for development
-    if (parsed.protocol !== 'https:' && parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1') {
-      return { valid: false, error: 'Seules les connexions HTTPS sont autorisées' }
+    const isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+
+    // Only allow https for production, http for localhost only
+    if (parsed.protocol === 'https:') {
+      return { valid: true }
     }
-    return { valid: true }
+    if (parsed.protocol === 'http:' && isLocalhost) {
+      return { valid: true }
+    }
+
+    // Reject all other schemes (http on non-localhost, ftp, ws, etc.)
+    return {
+      valid: false,
+      error: isLocalhost
+        ? 'Seul le protocole HTTP est autorisé en local'
+        : 'Seules les connexions HTTPS sont autorisées'
+    }
   } catch {
     return { valid: false, error: 'URL invalide' }
   }

@@ -18,6 +18,23 @@ describe('Jamespot API Client', () => {
       expect(result.error).toContain('HTTPS')
     })
 
+    it('rejects non-HTTP schemes on localhost (ftp, ws, etc.)', async () => {
+      const ftpResult = await jamespotApi.initialize('ftp://localhost', 'test@test.com', 'pass')
+      expect(ftpResult.success).toBe(false)
+
+      const wsResult = await jamespotApi.initialize('ws://localhost', 'test@test.com', 'pass')
+      expect(wsResult.success).toBe(false)
+
+      const fileResult = await jamespotApi.initialize('file://localhost', 'test@test.com', 'pass')
+      expect(fileResult.success).toBe(false)
+    })
+
+    it('rejects HTTP on non-localhost hosts', async () => {
+      const result = await jamespotApi.initialize('http://192.168.1.1', 'test@test.com', 'pass')
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('HTTPS')
+    })
+
     it('accepts HTTPS URLs', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
