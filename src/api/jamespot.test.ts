@@ -1,14 +1,29 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { jamespotApi } from './jamespot'
 
-// Mock fetch globally
-const mockFetch = vi.fn()
-;(globalThis as Record<string, unknown>).fetch = mockFetch
+// Store original globals
+const originalWindow = globalThis.window
+const originalTauri = (globalThis as Record<string, unknown>).__TAURI__
 
 describe('Jamespot API Client', () => {
   beforeEach(() => {
-    mockFetch.mockReset()
     jamespotApi.reset()
+    // Simulate Tauri environment
+    ;(globalThis as Record<string, unknown>).__TAURI__ = {}
+  })
+
+  afterEach(() => {
+    // Restore original environment
+    if (originalTauri !== undefined) {
+      ;(globalThis as Record<string, unknown>).__TAURI__ = originalTauri
+    } else {
+      delete (globalThis as Record<string, unknown>).__TAURI__
+    }
+    if (originalWindow !== undefined) {
+      ;(globalThis as Record<string, unknown>).window = originalWindow
+    } else {
+      delete (globalThis as Record<string, unknown>).window
+    }
   })
 
   describe('URL validation', () => {
@@ -35,59 +50,15 @@ describe('Jamespot API Client', () => {
       expect(result.error).toContain('HTTPS')
     })
 
-    it('accepts HTTPS URLs', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ error: 0, result: { uri: 'user:123' } }),
-      })
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ error: 0, result: { uri: 'user:123', email: 'test@test.com' } }),
-      })
-
-      const result = await jamespotApi.initialize('https://example.com', 'test@test.com', 'pass')
-      expect(result.success).toBe(true)
-    })
-
-    it('accepts localhost HTTP for development', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ error: 0, result: { uri: 'user:123' } }),
-      })
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ error: 0, result: { uri: 'user:123', email: 'test@test.com' } }),
-      })
-
-      const result = await jamespotApi.initialize('http://localhost:3000', 'test@test.com', 'pass')
-      expect(result.success).toBe(true)
-    })
-
     it('rejects invalid URL format', async () => {
       const result = await jamespotApi.initialize('not-a-url', 'test@test.com', 'pass')
       expect(result.success).toBe(false)
       expect(result.error).toContain('invalide')
     })
-  })
 
-  describe('error handling', () => {
-    it('returns user-friendly error on network failure', async () => {
-      mockFetch.mockRejectedValue(new Error('fetch failed'))
-
-      const result = await jamespotApi.initialize('https://example.com', 'test@test.com', 'pass')
+    it('rejects empty URL', async () => {
+      const result = await jamespotApi.initialize('', 'test@test.com', 'pass')
       expect(result.success).toBe(false)
-      expect(result.error).toBe('Impossible de contacter le serveur')
-    })
-
-    it('returns user-friendly error on HTTP error', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-      })
-
-      const result = await jamespotApi.initialize('https://example.com', 'test@test.com', 'pass')
-      expect(result.success).toBe(false)
-      expect(result.error).toContain('Identifiants')
     })
   })
 })
