@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { jamespotApi, type Group, type UserInfo, type Article } from '../api/jamespot'
 import { LoadingSpinner } from './LoadingSpinner'
@@ -25,6 +25,47 @@ export function Dashboard() {
   const [userSearchQuery, setUserSearchQuery] = useState('')
   const [hasSearchedUsers, setHasSearchedUsers] = useState(false)
   const [articleSearchQuery, setArticleSearchQuery] = useState('')
+
+  // Refs for keyboard shortcuts
+  const groupSearchRef = useRef<HTMLInputElement>(null)
+  const userSearchRef = useRef<HTMLInputElement>(null)
+  const articleSearchRef = useRef<HTMLInputElement>(null)
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip if typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        if (e.key === 'Escape') {
+          ;(e.target as HTMLInputElement).blur()
+        }
+        return
+      }
+
+      // Skip if modifier keys are pressed or during IME composition
+      if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) {
+        return
+      }
+
+      switch (e.key.toLowerCase()) {
+        case 'g':
+          groupSearchRef.current?.focus()
+          e.preventDefault()
+          break
+        case 'u':
+          userSearchRef.current?.focus()
+          e.preventDefault()
+          break
+        case 'a':
+          articleSearchRef.current?.focus()
+          e.preventDefault()
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   useEffect(() => {
     loadGroups()
@@ -148,8 +189,10 @@ export function Dashboard() {
               </button>
               <div className="search-bar">
               <input
+                ref={groupSearchRef}
                 type="text"
                 placeholder="Rechercher un groupe..."
+                title="Raccourci: G"
                 value={groupSearchQuery}
                 onChange={(e) => setGroupSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleGroupSearch()}
@@ -190,8 +233,10 @@ export function Dashboard() {
             <h2>Utilisateurs</h2>
             <div className="search-bar">
               <input
+                ref={userSearchRef}
                 type="text"
                 placeholder="Rechercher un utilisateur..."
+                title="Raccourci: U"
                 value={userSearchQuery}
                 onChange={(e) => setUserSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleUserSearch()}
@@ -234,8 +279,10 @@ export function Dashboard() {
               </button>
               <div className="search-bar">
                 <input
+                  ref={articleSearchRef}
                   type="text"
                   placeholder="Rechercher un article..."
+                  title="Raccourci: A"
                   value={articleSearchQuery}
                   onChange={(e) => setArticleSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !loadingArticles && handleArticleSearch()}
