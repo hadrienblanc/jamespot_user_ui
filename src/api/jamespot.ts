@@ -1,6 +1,5 @@
 // Jamespot API adapter for browser/Tauri environment
-// The jamespot-user-api is designed for browsers and needs window polyfill in Node
-// In Tauri/browser, window exists natively
+// Note: For proper cookie handling in Tauri, use tauri-plugin-http
 
 export interface UserInfo {
   uri: string
@@ -31,16 +30,59 @@ interface ApiResponse<T> {
   result: T
 }
 
+function sanitizeError(err: unknown): string {
+  if (err instanceof Error) {
+    // Map common errors to user-friendly messages
+    if (err.message.includes('fetch')) {
+      return 'Impossible de contacter le serveur'
+    }
+    if (err.message.includes('JSON')) {
+      return 'Réponse invalide du serveur'
+    }
+    return 'Une erreur est survenue'
+  }
+  return 'Erreur inconnue'
+}
+
+function validateUrl(url: string): { valid: boolean; error?: string } {
+  try {
+    const parsed = new URL(url)
+    const isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+
+    // Only allow https for production, http for localhost only
+    if (parsed.protocol === 'https:') {
+      return { valid: true }
+    }
+    if (parsed.protocol === 'http:' && isLocalhost) {
+      return { valid: true }
+    }
+
+    // Reject all other schemes (http on non-localhost, ftp, ws, etc.)
+    return {
+      valid: false,
+      error: isLocalhost
+        ? 'Seul le protocole HTTP est autorisé en local'
+        : 'Seules les connexions HTTPS sont autorisées'
+    }
+  } catch {
+    return { valid: false, error: 'URL invalide' }
+  }
+}
+
 // Simple fetch-based API client
-// In production, this would use the actual jamespot-user-api package
+// TODO: Replace with tauri-plugin-http for proper cookie handling in production
 class JamespotApiClient {
   private baseUrl: string = ''
-  private cookies: string = ''
   private initialized = false
 
   async initialize(url: string, email: string, password: string): Promise<LoginResult> {
+    // Validate URL first
+    const urlValidation = validateUrl(url)
+    if (!urlValidation.valid) {
+      return { success: false, error: urlValidation.error }
+    }
+
     this.baseUrl = url.replace(/\/$/, '')
-    this.cookies = ''
     this.initialized = false
 
     try {
@@ -50,13 +92,15 @@ class JamespotApiClient {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       })
 
-      // Extract cookies from response
-      const setCookie = loginResponse.headers.get('set-cookie')
-      if (setCookie) {
-        this.cookies = setCookie
+      if (!loginResponse.ok) {
+        return {
+          success: false,
+          error: loginResponse.status === 401 ? 'Identifiants invalides' : 'Erreur serveur',
+        }
       }
 
       const data: ApiResponse<{ uri?: string }> = await loginResponse.json()
@@ -79,7 +123,7 @@ class JamespotApiClient {
     } catch (err) {
       return {
         success: false,
-        error: err instanceof Error ? err.message : 'Erreur de connexion',
+        error: sanitizeError(err),
       }
     }
   }
@@ -93,15 +137,13 @@ class JamespotApiClient {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        ...(this.cookies ? { Cookie: this.cookies } : {}),
         ...options.headers,
       },
+      credentials: 'include',
     })
 
-    // Update cookies if new ones are set
-    const setCookie = response.headers.get('set-cookie')
-    if (setCookie) {
-      this.cookies = setCookie
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
     }
 
     return response.json()
@@ -154,7 +196,6 @@ class JamespotApiClient {
 
   reset(): void {
     this.baseUrl = ''
-    this.cookies = ''
     this.initialized = false
   }
 
