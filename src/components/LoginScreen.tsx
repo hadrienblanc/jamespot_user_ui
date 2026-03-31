@@ -1,11 +1,24 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 export function LoginScreen() {
-  const { login, isLoading, error } = useAuth()
+  const { login, isLoading, error, savedCredentials, loadSavedCredentials } = useAuth()
   const [url, setUrl] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+
+  // Load saved credentials on mount
+  useEffect(() => {
+    loadSavedCredentials()
+  }, [loadSavedCredentials])
+
+  // Pre-fill form when credentials are loaded (only if fields are still empty)
+  useEffect(() => {
+    if (savedCredentials && !url && !email) {
+      setUrl(savedCredentials.url)
+      setEmail(savedCredentials.email)
+    }
+  }, [savedCredentials, url, email])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
