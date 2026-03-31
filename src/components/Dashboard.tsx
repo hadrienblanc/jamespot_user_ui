@@ -104,6 +104,24 @@ export function Dashboard() {
       </header>
 
       <main className="dashboard-content">
+        {/* User Profile Card */}
+        <section className="section profile-section">
+          <div className="profile-card">
+            <div className="profile-avatar">
+              {user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+            </div>
+            <div className="profile-info">
+              <h2>{user?.displayName || 'Utilisateur'}</h2>
+              {user?.email && <p className="profile-email">{user.email}</p>}
+              {(user?.firstName || user?.lastName) && (
+                <p className="profile-name">
+                  {[user.firstName, user.lastName].filter(Boolean).join(' ')}
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+
         <section className="section">
           <div className="section-header">
             <h2>Groupes</h2>
@@ -425,6 +443,66 @@ export function Dashboard() {
           font-size: 13px;
           color: var(--color-text-muted);
           margin-bottom: 4px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .profile-section {
+          margin-bottom: 0;
+        }
+
+        .profile-card {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          padding: 24px;
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius);
+          max-width: 600px;
+        }
+
+        .profile-avatar {
+          width: 64px;
+          height: 64px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--color-accent);
+          border-radius: 50%;
+          color: white;
+          font-size: 28px;
+          font-weight: 600;
+          flex-shrink: 0;
+        }
+
+        .profile-info {
+          min-width: 0;
+          overflow: hidden;
+        }
+
+        .profile-info h2 {
+          font-size: 20px;
+          font-weight: 500;
+          margin-bottom: 4px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .profile-email {
+          color: var(--color-text-muted);
+          font-size: 14px;
+          margin-bottom: 2px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .profile-name {
+          color: var(--color-text);
+          font-size: 14px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
