@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { jamespotApi, type Group, type UserInfo } from '../api/jamespot'
+import { LoadingSpinner } from './LoadingSpinner'
 
 export function Dashboard() {
   const { user, logout } = useAuth()
@@ -96,7 +97,7 @@ export function Dashboard() {
           </div>
 
           {loadingGroups ? (
-            <div className="loading">Chargement...</div>
+            <LoadingSpinner message="Chargement des groupes..." />
           ) : groups.length === 0 ? (
             <div className="empty">Aucun groupe trouvé</div>
           ) : (
