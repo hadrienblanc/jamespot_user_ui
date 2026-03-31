@@ -1,6 +1,7 @@
 import { LoginScreen } from './components/LoginScreen'
 import { Dashboard } from './components/Dashboard'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 function AppContent() {
   const { isAuthenticated } = useAuth()
@@ -9,9 +10,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 
