@@ -147,6 +147,8 @@ export function Dashboard() {
     }
   }
 
+  const [showHelp, setShowHelp] = useState(false)
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
@@ -154,6 +156,31 @@ export function Dashboard() {
           <h1>Jamespot</h1>
         </div>
         <div className="header-right">
+          <div className="help-container">
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="btn-icon"
+              aria-label="Aide"
+              title="Raccourcis clavier"
+            >
+              ?
+            </button>
+            {showHelp && (
+              <div className="help-dropdown">
+                <h4>Raccourcis clavier</h4>
+                <dl>
+                  <dt><kbd>G</kbd></dt>
+                  <dd>Rechercher un groupe</dd>
+                  <dt><kbd>U</kbd></dt>
+                  <dd>Rechercher un utilisateur</dd>
+                  <dt><kbd>A</kbd></dt>
+                  <dd>Rechercher un article</dd>
+                  <dt><kbd>Esc</kbd></dt>
+                  <dd>Quitter le champ de recherche</dd>
+                </dl>
+              </div>
+            )}
+          </div>
           <span className="user-name">{user?.displayName || user?.email}</span>
           <button onClick={logout} className="btn-ghost">
             Déconnexion
@@ -459,6 +486,65 @@ export function Dashboard() {
         .btn-icon:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+
+        .help-container {
+          position: relative;
+        }
+
+        .help-dropdown {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          margin-top: 8px;
+          padding: 16px;
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          min-width: 220px;
+          z-index: 100;
+        }
+
+        .help-dropdown h4 {
+          font-size: 13px;
+          font-weight: 600;
+          margin-bottom: 12px;
+          color: var(--color-text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .help-dropdown dl {
+          display: grid;
+          gap: 8px;
+        }
+
+        .help-dropdown dt {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .help-dropdown kbd {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 24px;
+          height: 24px;
+          padding: 0 6px;
+          background: var(--color-bg);
+          border: 1px solid var(--color-border);
+          border-radius: 4px;
+          font-family: monospace;
+          font-size: 12px;
+          font-weight: 500;
+        }
+
+        .help-dropdown dd {
+          font-size: 13px;
+          color: var(--color-text-muted);
+          margin: 0;
         }
 
         .section-actions {
