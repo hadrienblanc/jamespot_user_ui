@@ -107,7 +107,11 @@ export function Dashboard() {
         <section className="section">
           <div className="section-header">
             <h2>Groupes</h2>
-            <div className="search-bar">
+            <div className="section-actions">
+              <button onClick={loadGroups} className="btn-icon" disabled={loadingGroups} title="Rafraîchir" aria-label="Rafraîchir les groupes">
+                ↻
+              </button>
+              <div className="search-bar">
               <input
                 type="text"
                 placeholder="Rechercher un groupe..."
@@ -118,6 +122,7 @@ export function Dashboard() {
               <button onClick={handleGroupSearch} className="btn-small">
                 Rechercher
               </button>
+              </div>
             </div>
           </div>
 
@@ -188,6 +193,9 @@ export function Dashboard() {
         <section className="section">
           <div className="section-header">
             <h2>Articles récents</h2>
+            <button onClick={loadArticles} className="btn-icon" disabled={loadingArticles} title="Rafraîchir" aria-label="Rafraîchir les articles">
+              ↻
+            </button>
           </div>
 
           {loadingArticles ? (
@@ -329,6 +337,38 @@ export function Dashboard() {
 
         .btn-small:disabled {
           opacity: 0.6;
+        }
+
+        .btn-icon {
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: transparent;
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius);
+          color: var(--color-text-muted);
+          font-size: 18px;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+
+        .btn-icon:hover:not(:disabled) {
+          background: var(--color-surface);
+          color: var(--color-text);
+          border-color: var(--color-text-muted);
+        }
+
+        .btn-icon:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .section-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
         }
 
         .loading, .empty {
