@@ -3,7 +3,7 @@ import { jamespotApi } from './jamespot'
 
 // Mock fetch globally
 const mockFetch = vi.fn()
-global.fetch = mockFetch
+;(globalThis as Record<string, unknown>).fetch = mockFetch
 
 describe('Jamespot API Client', () => {
   beforeEach(() => {
