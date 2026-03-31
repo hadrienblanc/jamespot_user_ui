@@ -1,21 +1,46 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { jamespotApi, type Group, type UserInfo } from '../api/jamespot'
+import { jamespotApi, type Group, type UserInfo, type Article } from '../api/jamespot'
 import { LoadingSpinner } from './LoadingSpinner'
+
+function formatDate(dateStr: string): string {
+  try {
+    const date = new Date(dateStr)
+    if (Number.isNaN(date.getTime())) return ''
+    return date.toLocaleDateString('fr-FR')
+  } catch {
+    return ''
+  }
+}
 
 export function Dashboard() {
   const { user, logout } = useAuth()
   const [groups, setGroups] = useState<Group[]>([])
   const [users, setUsers] = useState<UserInfo[]>([])
+  const [articles, setArticles] = useState<Article[]>([])
   const [loadingGroups, setLoadingGroups] = useState(true)
   const [loadingUsers, setLoadingUsers] = useState(false)
+  const [loadingArticles, setLoadingArticles] = useState(true)
   const [groupSearchQuery, setGroupSearchQuery] = useState('')
   const [userSearchQuery, setUserSearchQuery] = useState('')
   const [hasSearchedUsers, setHasSearchedUsers] = useState(false)
 
   useEffect(() => {
     loadGroups()
+    loadArticles()
   }, [])
+
+  const loadArticles = async () => {
+    setLoadingArticles(true)
+    try {
+      const data = await jamespotApi.getArticles(10, 1)
+      setArticles(data)
+    } catch (err) {
+      console.error('Failed to load articles:', err)
+    } finally {
+      setLoadingArticles(false)
+    }
+  }
 
   const loadGroups = async () => {
     setLoadingGroups(true)
@@ -153,6 +178,37 @@ export function Dashboard() {
                   <div className="item-info">
                     <h3>{u.displayName || u.email}</h3>
                     {u.email && <p>{u.email}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="section">
+          <div className="section-header">
+            <h2>Articles récents</h2>
+          </div>
+
+          {loadingArticles ? (
+            <LoadingSpinner message="Chargement des articles..." />
+          ) : articles.length === 0 ? (
+            <div className="empty">Aucun article</div>
+          ) : (
+            <div className="item-list">
+              {articles.map((article) => (
+                <div key={article.uri} className="item-card">
+                  <div className="item-icon">
+                    {article.title?.charAt(0).toUpperCase() || 'A'}
+                  </div>
+                  <div className="item-info">
+                    <h3>{article.title}</h3>
+                    {article.description && <p>{article.description}</p>}
+                    {article.dateCreation && (
+                      <span className="meta">
+                        {formatDate(article.dateCreation)}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}

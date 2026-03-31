@@ -20,6 +20,15 @@ export interface Group {
   type?: string
 }
 
+export interface Article {
+  uri: string
+  title: string
+  description?: string
+  dateCreation?: string
+  author?: string
+  type?: string
+}
+
 export interface LoginResult {
   success: boolean
   user?: UserInfo
@@ -221,6 +230,20 @@ class JamespotApiClient {
     })
 
     return response.error === 0 ? (response.result.list || []) : []
+  }
+
+  async getArticles(limit = 20, page = 1): Promise<Article[]> {
+    const response = await this.request<{ data?: Article[] }>('/api/objectlist/article', {
+      method: 'POST',
+      body: JSON.stringify({
+        limit,
+        page,
+        format: 'list',
+        orders: [{ name: 'dateCreation', sort: 'DESC' }],
+      }),
+    })
+
+    return response.error === 0 ? (response.result.data || []) : []
   }
 
   reset(): void {
